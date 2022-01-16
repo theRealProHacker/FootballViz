@@ -1,5 +1,4 @@
 import json
-from turtle import pu
 
 from flask import Flask
 
@@ -106,8 +105,5 @@ def get_team_and_comp(team_id,comp_team_id=None):
     return json.dumps(team_dict,ensure_ascii=False)
 
 if __name__ == "__main__":
-    #app.run("0.0.0.0")
-    #test_result = get_all_teams()
-    test_result = get_team_and_comp(9823)
-    with open("test.json","w",encoding="utf8") as f:
-        f.write(test_result)
+    app.run("0.0.0.0")
+    
