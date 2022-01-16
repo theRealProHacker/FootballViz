@@ -1,0 +1,8 @@
+/venv
+/.vscode
+/metadata
+/__pycache__
+test.*
+plotter.py
+
+original_database.sqlite
