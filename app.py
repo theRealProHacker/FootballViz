@@ -1,6 +1,6 @@
 import json
-
-from flask import Flask
+import sys
+from flask import Flask,request
 
 from cat_calculator import *
 from data_getter import get_data
@@ -53,7 +53,6 @@ def get_data(teams,attributes,cumulative:bool):
         data.append(season_data)
     return data
 
-@app.route("/teams")
 def get_all_teams():
     teams=[]
     data=get_data(TEAMS,ATTRIBUTES,cumulative=True)
@@ -71,7 +70,6 @@ def get_all_teams():
         }
     return json.dumps(result,ensure_ascii=False)
 
-@app.route("/teams?id=<team_id>&comp=<comp_team_id>")
 def get_team_and_comp(team_id,comp_team_id=None):
     def calc_mean(l):
         length = len(l)
@@ -103,6 +101,15 @@ def get_team_and_comp(team_id,comp_team_id=None):
         data.append(data_addition)
     team_dict["data"] = data
     return json.dumps(team_dict,ensure_ascii=False)
+
+@app.route("/teams")
+def api_route():
+    team_id=request.args["id"]
+    comp_team_id=request.args["comp"]
+    if not team_id:
+        return get_all_teams()
+    else:
+        return get_team_and_comp(team_id,comp_team_id)
 
 if __name__ == "__main__":
     app.run("0.0.0.0",debug=True)
