@@ -1,5 +1,4 @@
 import json
-from turtle import pu
 
 from flask import Flask
 
@@ -57,7 +56,7 @@ def get_data(teams,attributes,cumulative : bool):
 @app.route("/teams")
 def get_all_teams():
     teams=[]
-    data=get_data(TEAMS,ATTRIBUTES)
+    data=get_data(TEAMS,ATTRIBUTES,cumulative=True)
     for team in TEAMS.itertuples(index=False):
         _,team_id, name, short_name, logo, colors, description, wiki_source, german_name = team #one needs to skip the first value (_0), but I don't understand why it even exists even though index was set to false
         colors=json.loads(colors)
