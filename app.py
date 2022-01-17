@@ -18,7 +18,7 @@ def rgb_to_hex(rgb):
     #https://www.codespeedy.com/convert-rgb-to-hex-color-code-in-python/
     return '#%02x%02x%02x' % tuple(rgb)
 
-def get_data(teams,attributes,cumulative:bool):
+def get_data(teams,attributes,cumulative : bool):
     """Merges teams with attributes and sometimes makes the cumulative data for the Stream Graph"""
     CAT_NAMES = [f"cat{i+1}" for i in range(4)]
     def put_together(single_cats,before_cats):
@@ -106,8 +106,8 @@ def get_team_and_comp(team_id,comp_team_id=None):
     return json.dumps(team_dict,ensure_ascii=False)
 
 if __name__ == "__main__":
-    #app.run("0.0.0.0")
+    app.run()
     #test_result = get_all_teams()
-    test_result = get_team_and_comp(9823)
-    with open("test.json","w",encoding="utf8") as f:
-        f.write(test_result)
+    # test_result = get_team_and_comp(9823)
+    # with open("test.json","w",encoding="utf8") as f:
+    #     f.write(test_result)
