@@ -17,7 +17,7 @@ def rgb_to_hex(rgb):
     #https://www.codespeedy.com/convert-rgb-to-hex-color-code-in-python/
     return '#%02x%02x%02x' % tuple(rgb)
 
-def get_data(teams,attributes,cumulative:bool):
+def get_seasonal_data(teams,attributes,cumulative:bool):
     """Merges teams with attributes and sometimes makes the cumulative data for the Stream Graph"""
     CAT_NAMES = [f"cat{i+1}" for i in range(4)]
     def put_together(single_cats,before_cats):
@@ -55,7 +55,7 @@ def get_data(teams,attributes,cumulative:bool):
 
 def get_all_teams():
     teams=[]
-    data=get_data(TEAMS,ATTRIBUTES,cumulative=True)
+    data=get_seasonal_data(TEAMS,ATTRIBUTES,cumulative=True)
     for team in TEAMS.itertuples(index=False):
         _,team_id, name, short_name, logo, colors, description, wiki_source, german_name = team #one needs to skip the first value (_0), but I don't understand why it even exists even though index was set to false
         colors=json.loads(colors)
@@ -78,7 +78,7 @@ def get_team_and_comp(team_id,comp_team_id=None):
     #from https://stackoverflow.com/questions/41255215/pandas-find-first-occurrence
     team=TEAMS.iloc[TEAMS["team_id"].eq(team_id).idxmax()]
     _,team_id_for_assertion, name, short_name, logo, colors, description, wiki_source, german_name = team
-    assert team_id_for_assertion==team_id
+    if not team_id_for_assertion==team_id:return f"Actual team_id: {team_id}. Found: {team_id_for_assertion}"
     team_dict={
         "name":german_name,
         "description":description,
@@ -92,7 +92,7 @@ def get_team_and_comp(team_id,comp_team_id=None):
     filter_team=TEAMS
     if comp_team_id:
         filter_team=filter_team[filter_team["team_id"].isin([team_id,comp_team_id])]
-    pure_data=get_data(filter_team,ATTRIBUTES,cumulative=False)
+    pure_data=get_seasonal_data(filter_team,ATTRIBUTES,cumulative=False)
     for season_data in pure_data:
         data_addition={"x":season_data["season"]}
         for cat,value in season_data[team_id].items():
@@ -104,12 +104,15 @@ def get_team_and_comp(team_id,comp_team_id=None):
 
 @app.route("/teams")
 def api_route():
-    team_id=request.args["id"]
-    comp_team_id=request.args["comp"]
-    if not team_id:
-        return get_all_teams()
-    else:
+    try:
+        team_id=int(request.args.get("id"))
+        try:
+            comp_team_id=int(request.args.get("comp"))
+        except TypeError:
+            comp_team_id=None
         return get_team_and_comp(team_id,comp_team_id)
+    except TypeError:
+        return get_all_teams()
 
 if __name__ == "__main__":
     app.run("0.0.0.0",debug=True)
