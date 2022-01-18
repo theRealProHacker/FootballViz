@@ -18,7 +18,7 @@ def rgb_to_hex(rgb):
     #https://www.codespeedy.com/convert-rgb-to-hex-color-code-in-python/
     return '#%02x%02x%02x' % tuple(rgb)
 
-def get_data(teams,attributes,cumulative : bool):
+def get_seasonal_data(teams,attributes,cumulative : bool):
     """Merges teams with attributes and sometimes makes the cumulative data for the Stream Graph"""
     CAT_NAMES = [f"cat{i+1}" for i in range(4)]
     def put_together(single_cats,before_cats):
@@ -56,8 +56,7 @@ def get_data(teams,attributes,cumulative : bool):
 
 @app.route("/teams")
 @cross_origin(origin='*', headers=['Content-Type', 'Application/json'])
-def get_all_teams():
-    print("asdf")
+def get_all_teams(): 
     teams=[]
     data=get_seasonal_data(TEAMS,ATTRIBUTES,cumulative=True)
     for team in TEAMS.itertuples(index=False):
