@@ -1,6 +1,6 @@
 import json
-
-from flask import Flask
+import sys
+from flask import Flask,request
 
 from cat_calculator import *
 from data_getter import get_data
@@ -59,7 +59,7 @@ def get_data(teams,attributes,cumulative : bool):
 def get_all_teams():
     print("asdf")
     teams=[]
-    data=get_data(TEAMS,ATTRIBUTES,cumulative=True)
+    data=get_seasonal_data(TEAMS,ATTRIBUTES,cumulative=True)
     for team in TEAMS.itertuples(index=False):
         _,team_id, name, short_name, logo, colors, description, wiki_source, german_name = team #one needs to skip the first value (_0), but I don't understand why it even exists even though index was set to false
         colors=json.loads(colors)
@@ -74,7 +74,6 @@ def get_all_teams():
         }
     return json.dumps(result,ensure_ascii=False)
 
-@app.route("/teams?id=<team_id>&comp=<comp_team_id>")
 def get_team_and_comp(team_id,comp_team_id=None):
     def calc_mean(l):
         length = len(l)
@@ -83,7 +82,7 @@ def get_team_and_comp(team_id,comp_team_id=None):
     #from https://stackoverflow.com/questions/41255215/pandas-find-first-occurrence
     team=TEAMS.iloc[TEAMS["team_id"].eq(team_id).idxmax()]
     _,team_id_for_assertion, name, short_name, logo, colors, description, wiki_source, german_name = team
-    assert team_id_for_assertion==team_id
+    if not team_id_for_assertion==team_id:return f"Actual team_id: {team_id}. Found: {team_id_for_assertion}"
     team_dict={
         "name":german_name,
         "description":description,
@@ -97,7 +96,7 @@ def get_team_and_comp(team_id,comp_team_id=None):
     filter_team=TEAMS
     if comp_team_id:
         filter_team=filter_team[filter_team["team_id"].isin([team_id,comp_team_id])]
-    pure_data=get_data(filter_team,ATTRIBUTES,cumulative=False)
+    pure_data=get_seasonal_data(filter_team,ATTRIBUTES,cumulative=False)
     for season_data in pure_data:
         data_addition={"x":season_data["season"]}
         for cat,value in season_data[team_id].items():
@@ -106,6 +105,18 @@ def get_team_and_comp(team_id,comp_team_id=None):
         data.append(data_addition)
     team_dict["data"] = data
     return json.dumps(team_dict,ensure_ascii=False) , 200, {"Access-Control-Allow-Origin": "*"}
+
+@app.route("/teams")
+def api_route():
+    try:
+        team_id=int(request.args.get("id"))
+        try:
+            comp_team_id=int(request.args.get("comp"))
+        except TypeError:
+            comp_team_id=None
+        return get_team_and_comp(team_id,comp_team_id)
+    except TypeError:
+        return get_all_teams()
 
 if __name__ == "__main__":
     app.run()
