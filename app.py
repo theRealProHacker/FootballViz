@@ -4,6 +4,7 @@ from flask import Flask
 
 from cat_calculator import *
 from data_getter import get_data
+from flask_cors import cross_origin
 
 app=Flask(__name__)
 
@@ -54,7 +55,9 @@ def get_data(teams,attributes,cumulative : bool):
     return data
 
 @app.route("/teams")
+@cross_origin(origin='*', headers=['Content-Type', 'Application/json'])
 def get_all_teams():
+    print("asdf")
     teams=[]
     data=get_data(TEAMS,ATTRIBUTES,cumulative=True)
     for team in TEAMS.itertuples(index=False):
@@ -102,7 +105,7 @@ def get_team_and_comp(team_id,comp_team_id=None):
             data_addition[str(cat)+"c"]=calc_mean([team_data[cat] for k,team_data in season_data.items() if not k in ["season",team_id]])
         data.append(data_addition)
     team_dict["data"] = data
-    return json.dumps(team_dict,ensure_ascii=False)
+    return json.dumps(team_dict,ensure_ascii=False) , 200, {"Access-Control-Allow-Origin": "*"}
 
 if __name__ == "__main__":
     app.run()
