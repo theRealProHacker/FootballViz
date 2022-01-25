@@ -32,15 +32,6 @@ GERMANY_ID = 7809
 wikipedia.set_lang("de")
 online=True
 
-def execute_one(query:str):
-    with o_db as sql:
-        sql.cursor.execute(query)
-        return sql.cursor.fetchone()
-def execute(query:str):
-    with o_db as sql:
-        sql.cursor.execute(query)
-        return sql.cursor.fetchall()
-
 def pandas_query(query:str):
     with o_db as sql:
         return pd.read_sql_query(query,sql.connection,parse_dates="date")
