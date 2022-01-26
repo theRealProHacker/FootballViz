@@ -92,6 +92,7 @@ def get_all_teams():
             if team_id=="x":continue #skip season
             for catname,catmax in zip(CAT_NAMES,calc_maxes):
                 team_data[catname]/=catmax
+            data_appension[team_id]=team_data
         data.append(data_appension)
     for team in TEAMS.itertuples(index=False):
         team_id, logo, colors, description, wiki_source, german_name = team
