@@ -53,9 +53,8 @@ def get_seasonal_data(teams,attributes,cumulative : bool):
                 season_data[team_id]=row_cats
         data.append(season_data)
     return data
+ 
 
-@app.route("/teams")
-@cross_origin(origin='*', headers=['Content-Type', 'Application/json'])
 def get_all_teams(): 
     teams=[]
     data=get_seasonal_data(TEAMS,ATTRIBUTES,cumulative=True)
@@ -73,12 +72,15 @@ def get_all_teams():
         }
     return json.dumps(result,ensure_ascii=False)
 
-def get_team_and_comp(team_id,comp_team_id=None):
-    def calc_mean(l):
+def calc_mean(l):
         length = len(l)
         assert (length>0)
         return sum(l)/length
-    #from https://stackoverflow.com/questions/41255215/pandas-find-first-occurrence
+
+ 
+
+def get_team_and_comp(team_id,comp_team_id=None):
+
     team=TEAMS.iloc[TEAMS["team_id"].eq(team_id).idxmax()]
     _,team_id_for_assertion, name, short_name, logo, colors, description, wiki_source, german_name = team
     if not team_id_for_assertion==team_id:return f"Actual team_id: {team_id}. Found: {team_id_for_assertion}"
@@ -103,23 +105,30 @@ def get_team_and_comp(team_id,comp_team_id=None):
             data_addition[str(cat)+"c"]=calc_mean([team_data[cat] for k,team_data in season_data.items() if not k in ["season",team_id]])
         data.append(data_addition)
     team_dict["data"] = data
-    return json.dumps(team_dict,ensure_ascii=False) , 200, {"Access-Control-Allow-Origin": "*"}
+    return json.dumps(team_dict,ensure_ascii=False)  
 
+
+
+
+@cross_origin(origin='*', headers=['Content-Type', 'Application/json'])
 @app.route("/teams")
-def api_route():
-    try:
-        team_id=int(request.args.get("id"))
-        try:
-            comp_team_id=int(request.args.get("comp"))
-        except TypeError:
-            comp_team_id=None
-        return get_team_and_comp(team_id,comp_team_id)
-    except TypeError:
-        return get_all_teams()
+def api_route():  
+        team_id= int(request.args.get("id"))  if "id" in request.args else -1
+        comp_team_id= int(request.args.get("comp")) if "comp" in request.args else  None
+
+        if(team_id == -1 and comp_team_id == None) :
+            out = get_all_teams() 
+        elif(team_id != -1):
+            out = get_team_and_comp(team_id , comp_team_id) 
+        else: 
+            return {"error": "paramters are rong" }, 400, {"Access-Control-Allow-Origin": "*"}
+
+        return out , 200, {"Access-Control-Allow-Origin": "*"}
+
+
+
+
 
 if __name__ == "__main__":
     app.run()
-    #test_result = get_all_teams()
-    # test_result = get_team_and_comp(9823)
-    # with open("test.json","w",encoding="utf8") as f:
-    #     f.write(test_result)
+ 
