@@ -168,11 +168,11 @@ def assemble_tables():
                         opponent_goals=m[f"{opponent_side}_goals"]
                         goals+=own_goals
                         goals_against+=opponent_goals
-                        if opponent_goals==0:
+                        if opponent_goals==0 and own_goals > 0:
                             perfect_games+=1
-                        if opponent_goals==goals: #draw
+                        if opponent_goals==own_goals: #draw
                             points+=1
-                        elif opponent_goals<goals: #win
+                        elif opponent_goals<own_goals: #win
                             points+=3
                 rows.append((team_id,season,points,goals,goals_against,perfect_games,money_spent))
         df=pd.DataFrame(rows,columns=["team_id","season","points","goals","goals_against","perfect_games","money_spent"])
@@ -209,4 +209,10 @@ def assemble_tables():
         dataframe.to_csv(f"database/{k}.csv")
     print("Pretty successful")
 
-assemble_tables()
+
+ 
+
+
+
+if(__name__ == "__main__"):
+    assemble_tables() 

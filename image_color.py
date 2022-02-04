@@ -9,9 +9,7 @@ def color_from_image(url:str):
     response=requests.get(url, headers={'User-Agent': 'Custom'} )
     try:
         response.raise_for_status()
-        bytes=BytesIO(response.content)
-        #use colorthief
-        #https://github.com/fengsp/color-thief-py/blob/master/colorthief.py
+        bytes=BytesIO(response.content) 
         palette=ColorThief(bytes).get_palette(color_count=2,quality=2)[0:2]
         if __name__ == '__main__':
             for color in palette:
