@@ -1,8 +1,9 @@
 import json
 import sqlite3
-
+import requests
 import pandas as pd
-import wikipedia 
+import wikipedia
+from bs4 import BeautifulSoup
 from image_color import color_from_image
 from webscraper import get_scraped, get_team_dict, fold_scraped
 
@@ -71,6 +72,25 @@ def parse_money(string:str):
     value=float(float_str.replace(",","."))*unit_dict[unit]
     return value
 
+def wiki_scrape(url):
+    response=requests.get(url)
+    soup = BeautifulSoup(response.text,features="html5lib")
+    attributes_dict={"Gründung":"founded","Mitglieder":"members","Website":"url"}
+    info_box = soup.select_one("table.infobox")
+    table_dict={}
+    def process_number(s:str):
+        for i,char in enumerate(s):
+            if char in "[(":
+                return s[0:i]
+        return s
+    for tr in info_box.select("tr"):
+        tds=[td.text.strip() for td in tr.select("td")]
+        if len(tds)==2:
+            attr=attributes_dict.get(tds[0])
+            if attr:
+                table_dict[attr]=process_number(tds[1])
+    return table_dict
+
 def assemble_tables():
     team_extras,transfers=get_scraped().values()
     flattened_teams=fold_scraped(team_extras)
@@ -114,6 +134,7 @@ def assemble_tables():
         colors=[]
         descriptions=[]
         wikipedia_sources=[]
+        wd={"founded":[],"members":[],"url":[]}
         for _,team in teams.iterrows():
             _id=team["team_id"]
             try:
@@ -131,11 +152,14 @@ def assemble_tables():
                 wiki_page = wikipedia.page(found_name)
                 descriptions.append(wiki_page.summary)
                 wikipedia_sources.append(wiki_page.url)
+                wiki_data=wiki_scrape(wiki_page.url)
+                for k in wd.keys():
+                    wd[k].append(wiki_data.get(k))
             else:
                 colors.append(None)
                 descriptions.append(None)
                 wikipedia_sources.append(None)
-        teams=teams.assign(logo=logos,color=colors,description=descriptions,wiki_source=wikipedia_sources,german_name=scraped_names)
+        teams=teams.assign(logo=logos,color=colors,description=descriptions,wiki_source=wikipedia_sources,homepage=wd["url"],founded=wd["founded"],members=wd["members"],german_name=scraped_names)
         return teams
     
     #Team_Attributes

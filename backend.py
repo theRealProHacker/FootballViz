@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 import json
 
 def get_data(table_name:str):
@@ -35,7 +34,7 @@ def goals_against_per_point(goals_against,points):
  
 
 MATCHES=get_data("Match")
-TEAMS=get_data("Team")[["team_id","logo","color","description","wiki_source","german_name"]]
+TEAMS=get_data("Team")[["team_id","logo","color","description","wiki_source","homepage","founded","members","german_name"]]
 ATTRIBUTES=get_data("Team_Attributes")
 TRANSFERS=get_data("Transfers")
 
@@ -57,8 +56,6 @@ def make_seasons():
     """Returns a list of seasons ordered from oldest to latest"""
     for season in range (2008,2016):
         yield f"{season}/{season+1}"
-
- 
 
 def get_all_teams():
     """Makes the data for all teams"""
@@ -99,7 +96,7 @@ def get_all_teams():
         data.append(data_appension)
 
     for team in TEAMS.itertuples(index=False):
-        team_id, logo, colors, description, wiki_source, german_name = team
+        team_id, logo, colors, description, wiki_source, homepage, founded, members, german_name = team
         colors=json.loads(colors)
         teams.append({
             "dataKey":team_id,
@@ -177,9 +174,6 @@ def getSeasonalDataTransfer(team_id: int, season: str):
     out.append({"name" : "outgoing" ,"value" :(transfersOutgoingSum / 1_000_000) })
     return out
 
-
-
-
 def fillJson(jsonToFill: dict , dataJson : dict , home: bool):
     jsonToFill["date"] = dataJson["date"]
     jsonToFill["goalHome"] = dataJson["home_goals"] if home else dataJson["away_goals"]
@@ -194,7 +188,6 @@ def getHomeTeam(team_id : int, match: dict ):
     else:
         home = False
     return home
-
 
 def getMoneyDayData(team_id : int, season: str):
     matches = getSeasonalData(team_id, season)
@@ -213,9 +206,7 @@ def getMoneyDayData(team_id : int, season: str):
         match_out["goalSum"] = goals
         match_out = fillJson(match_out, match, home)
         out.append(match_out)
-    
     return { "matches" : out , "transfers" : transferData }
-
 
 def getPointGoalData(team_id : int, season: str):
     matches = getSeasonalData(team_id, season)
@@ -279,8 +270,6 @@ def getPointsPerMoneyData(team_id : int, season: str):
         out.append(match_out)
     return { "matches" : out , "transfers" : transferData }
 
-
-
 def calc_mean(l):
     length = len(l)
     assert (length>0)
@@ -289,7 +278,7 @@ def calc_mean(l):
 def get_team_and_comp(main_team_id,comp_team_id):
     CAT_NAMES = [f"cat{i+1}" for i in range(4)]
     team=find_in_df(TEAMS,team_id=main_team_id)
-    team_id_for_assertion, logo, colors, description, wiki_source, german_name = team
+    team_id_for_assertion, logo, colors, description, wiki_source, homepage, founded, members, german_name = team
     colorsC = find_in_df(TEAMS, team_id=comp_team_id)[2] if comp_team_id else colors
     if not team_id_for_assertion==main_team_id:return f"Actual team_id: {main_team_id}. Found: {team_id_for_assertion}"
     team_dict={
@@ -298,9 +287,9 @@ def get_team_and_comp(main_team_id,comp_team_id):
         "color": rgb_to_hex(json.loads(colors)[0]),
         "colorC": rgb_to_hex(json.loads(colorsC)[0]),
         "wiki_source":wiki_source,
-        "founded":"?",
-        "url":"?",
-        "members":"?"
+        "founded":founded,
+        "url":homepage,
+        "members":members
     }
     data=[]
     for season in make_seasons():
