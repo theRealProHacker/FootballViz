@@ -221,7 +221,7 @@ def getPefectGameData(team_id : int, season: str):
         match_out["perfectGames"] = perfectGames
         match_out = fillJson(match_out, match, home)
         out.append(match_out)
-    return out
+    return {"matches": out}
 
 def getGoalAgainstData(team_id : int, season: str):
     matches = getSeasonalData(team_id, season)
