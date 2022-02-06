@@ -1,7 +1,7 @@
 from flask import Flask, request
 
 from flask_cors import cross_origin
-from backend import get_all_teams, get_team_and_comp, getMoneyDayData, getPointGoalData, getPefectGameData, getGoalAgainstData
+from backend import get_all_teams, get_team_and_comp, getMoneyDayData, getPointGoalData, getPefectGameData , get_average_goals_per_win
 
 app=Flask(__name__)
 
@@ -34,10 +34,10 @@ def getMetaInformation():
             out = getPointGoalData(team_id, season)
         elif(kind == "perfectgames"):
             out = getPefectGameData(team_id, season)
-        elif(kind == "goalagainst"):
-            out = getGoalAgainstData(team_id, season)
+        elif(kind == "avgvic"):
+            out = get_average_goals_per_win(team_id, season) 
         else:
-            return out, 400, {"Access-Control-Allow-Origin": "*"}
+            return out, 400, {"Access-Control-Allow-Origin": "*"} 
         return out , 200, {"Access-Control-Allow-Origin": "*"}
 
 if __name__ == "__main__":

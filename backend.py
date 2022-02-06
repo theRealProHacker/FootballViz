@@ -58,11 +58,7 @@ def make_seasons():
     for season in range (2008,2016):
         yield f"{season}/{season+1}"
 
-# def normalize_groups(df,groupby,normalize):
-#     groups = df.groupby(groupby)
-#     mean, std = groups.transform("mean"), groups.transform("std")
-#     normalized = (df[mean.columns] - mean) / std
-#     return normalized
+ 
 
 def get_all_teams():
     """Makes the data for all teams"""
@@ -80,13 +76,13 @@ def get_all_teams():
             calc_vals=[0]*4
             attributes = find_in_df(season_df,team_id=team_id)
             if attributes is not None:
-                _,assertion_team_id,season,points,goals,goals_against,perfect_games,money_spent = tuple(attributes)
+                _,assertion_team_id,season,points,goals,goals_against,perfect_games,money_spent = tuple(attributes) 
                 if not assertion_team_id==team_id:return f"Actual team_id: {team_id}. Found: {assertion_team_id}"
                 calc_vals=[
                     goal_per_money(goals,money_spent),
                     points_per_goal(points,goals),
-                    points_per_money(points,money_spent),
-                    perfect_games
+                    average_goals_per_win(team_id, season),
+                    int(perfect_games)
                 ]
                 for i,x in enumerate(calc_vals):calc_maxes[i] = max(calc_maxes[i],x)
             data_appension[team_id]=dict(zip(CAT_NAMES,calc_vals))
@@ -116,6 +112,44 @@ def get_all_teams():
         "teams":teams
         }
     return json.dumps(result,ensure_ascii=False)
+
+def average_goals_per_win(team_id, season):
+    matches = getSeasonalData(team_id, season)
+    vicotory, goals, goal_against = 0, 0, 0
+    for match in matches:  
+        home= getHomeTeam(team_id, match)
+        if(match["home_goals"] > match["away_goals"] and home):
+            vicotory += 1
+            goals += match["home_goals"]
+            goal_against += match["away_goals"]
+        elif(match["home_goals"] < match["away_goals"] and not home):
+            vicotory += 1
+            goals += match["away_goals"]
+            goal_against += match["home_goals"]
+    return  vicotory / (goals - goal_against)
+
+
+def get_average_goals_per_win(team_id, season):
+    matches = getSeasonalData(team_id, season)
+    vicotory, goals, goal_against = 0, 0, 0
+    out = []
+    for match in matches: 
+        match_out = {}
+        home= getHomeTeam(team_id, match)
+        if(match["home_goals"] > match["away_goals"] and home):
+            vicotory += 1
+            goals += match["home_goals"]
+            goal_against += match["away_goals"]
+        elif(match["home_goals"] < match["away_goals"] and not home):
+            vicotory += 1
+            goals += match["away_goals"]
+            goal_against += match["home_goals"]
+        match_out["vicSum"] = vicotory
+        match_out["goalSum"] = goals
+        match_out = fillJson(match_out, match, home)
+        out.append(match_out)
+    return  {"matches" : out}
+
 
 def getSeasonalData(team_id: int, season: str):
     season_df=MATCHES[MATCHES["season"]==season]
@@ -163,7 +197,6 @@ def getHomeTeam(team_id : int, match: dict ):
 
 
 def getMoneyDayData(team_id : int, season: str):
- 
     matches = getSeasonalData(team_id, season)
     goals = 0
     out = []
@@ -189,21 +222,25 @@ def getPointGoalData(team_id : int, season: str):
     points = 0
     out = []
     home = True
+    goals = 0
     for match in matches:
         match_out = {}
-
         home= getHomeTeam(team_id, match)
+        if(home):
+            goals += match["home_goals"]
+        else:
+            goals += match["away_goals"]
         if(match["home_goals"] == match["away_goals"]): 
             points += 1 
         elif(match["home_goals"] > match["away_goals"] and home):
             points += 3
         elif(match["home_goals"] < match["away_goals"] and not home):
             points += 3
-
         match_out["pointSum"] = points
+        match_out["goalSum"] = goals
         match_out = fillJson(match_out, match, home)
         out.append(match_out)
-    return out
+    return {"matches": out}
 
 def getPefectGameData(team_id : int, season: str):
     matches = getSeasonalData(team_id, season)
@@ -212,7 +249,6 @@ def getPefectGameData(team_id : int, season: str):
     home = True
     for match in matches:
         match_out = {}
-
         home= getHomeTeam(team_id, match)
         if(match["home_goals"] > 0 and home and match["away_goals"] == 0 ): 
             perfectGames += 1 
@@ -223,23 +259,25 @@ def getPefectGameData(team_id : int, season: str):
         out.append(match_out)
     return {"matches": out}
 
-def getGoalAgainstData(team_id : int, season: str):
+def getPointsPerMoneyData(team_id : int, season: str):
     matches = getSeasonalData(team_id, season)
-    perfectGames = 0
+    transferData = getSeasonalDataTransfer(team_id, season)
+    points = 0
     out = []
     home = True
     for match in matches:
         match_out = {}
-
         home= getHomeTeam(team_id, match)
-        if(match["home_goals"] > 0 and home and match["away_goals"] == 0 ): 
-            perfectGames += 1 
-        elif(match["home_goals"] == 0 and not home and match["away_goals"] > 0 ): 
-            perfectGames += 1 
-        match_out["perfectGames"] = perfectGames
+        if(match["home_goals"] == match["away_goals"]): 
+            points += 1 
+        elif(match["home_goals"] > match["away_goals"] and home):
+            points += 3
+        elif(match["home_goals"] < match["away_goals"] and not home):
+            points += 3
+        match_out["pointSum"] = points
         match_out = fillJson(match_out, match, home)
         out.append(match_out)
-    return out
+    return { "matches" : out , "transfers" : transferData }
 
 
 
@@ -251,10 +289,6 @@ def calc_mean(l):
 def get_team_and_comp(main_team_id,comp_team_id):
     CAT_NAMES = [f"cat{i+1}" for i in range(4)]
     team=find_in_df(TEAMS,team_id=main_team_id)
- 
-
-
-
     team_id_for_assertion, logo, colors, description, wiki_source, german_name = team
     colorsC = find_in_df(TEAMS, team_id=comp_team_id)[2] if comp_team_id else colors
     if not team_id_for_assertion==main_team_id:return f"Actual team_id: {main_team_id}. Found: {team_id_for_assertion}"
@@ -284,8 +318,8 @@ def get_team_and_comp(main_team_id,comp_team_id):
                 calc_vals=[
                     goal_per_money(goals,money_spent),
                     points_per_goal(points,goals),
-                    points_per_money(points,money_spent),
-                    perfect_games / 1
+                    average_goals_per_win(team_id, season), 
+                    int(perfect_games  )
                 ]
                 #make calc_maxes contain max values for each cat
                 for i,x in enumerate(calc_vals):
@@ -305,5 +339,5 @@ def get_team_and_comp(main_team_id,comp_team_id):
  
 
 if(__name__ == "__main__"):
-    getSeasonalData(9823, "2012/2013")
+    get_team_and_comp(9823, None )
 
